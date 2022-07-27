@@ -19,36 +19,38 @@ contract Collectible is ERC721, Owned {
     uint8 private _counter;
     uint256 private _balance;
 
-    constructor(address _owner)
-        ERC721("Marvels NFT", "MARVELS")
-        Owned(_owner)
-    {}
+    constructor(address _owner) ERC721("Marvels", "MARV") Owned(_owner) {}
 
     function _baseURI() internal pure returns (string memory) {
-        return "https://ipfs.io/ipfs/";
+        return
+            "https://bafybeibhqislilo36kh2bhepzilr44hgfzpkngnf2x3tbuhopg4qb3fuha.ipfs.dweb.link/metadata/";
     }
 
     function totalSupply() public view returns (uint8) {
         return _counter;
     }
 
-    function mint() external payable returns (uint8) {
+    // function mint() external payable returns (uint8) {
+    //     require(_counter < _maxSupply, "No more tokens to mint");
+    //     require(msg.value != 0.01 ether, "Require 0.01 ether to mint");
+
+    //     uint8 id = _counter++;
+
+    //     _mint(msg.sender, id);
+    //     return id;
+    // }
+
+    function mint(uint256 _quantity)
+        external
+        payable
+        returns (uint256[] memory)
+    {
         require(_counter < _maxSupply, "No more tokens to mint");
         require(msg.value != 0.01 ether, "Require 0.01 ether to mint");
 
-        uint8 id = _counter++;
+        uint256[] memory ids = new uint256[](_quantity);
 
-        _mint(msg.sender, id);
-        return id;
-    }
-
-    function mint(uint256 _amount) external payable returns (uint8[] memory) {
-        require(_counter < _maxSupply, "No more tokens to mint");
-        require(msg.value != 0.01 ether, "Require 0.01 ether to mint");
-
-        uint8[] memory ids = new uint8[](_amount);
-
-        for (uint8 i = 0; i < _amount; i++) {
+        for (uint256 i = 0; i < _quantity; i++) {
             uint8 id = _counter++;
 
             _mint(msg.sender, id);

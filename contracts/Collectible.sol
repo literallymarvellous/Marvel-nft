@@ -12,18 +12,19 @@ import "solmate/src/auth/Owned.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract Collectible is ERC721, Owned {
-    using Strings for uint8;
+    using Strings for uint256;
     uint8 private constant _maxSupply = 100;
     uint256 private constant MINT_PRICE = 0.01 ether;
 
     uint8 private _counter;
+    uint256 private _balance;
 
     constructor(address _owner)
         ERC721("Marvels NFT", "MARVELS")
         Owned(_owner)
     {}
 
-    function _baseURI() internal view returns (string memory) {
+    function _baseURI() internal pure returns (string memory) {
         return "https://ipfs.io/ipfs/";
     }
 
@@ -31,28 +32,45 @@ contract Collectible is ERC721, Owned {
         return _counter;
     }
 
-    function mint() external payable {
+    function mint() external payable returns (uint8) {
         require(_counter < _maxSupply, "No more tokens to mint");
-        require(msg.value == 0.01 ether, "Require 0.01 ether to mint");
+        require(msg.value != 0.01 ether, "Require 0.01 ether to mint");
 
         uint8 id = _counter++;
 
         _mint(msg.sender, id);
+        return id;
     }
 
-    function mint(uint8 _amount) external payable {
+    function mint(uint256 _amount) external payable returns (uint8[] memory) {
         require(_counter < _maxSupply, "No more tokens to mint");
-        require(msg.value == 0.01 ether, "Require 0.01 ether to mint");
+        require(msg.value != 0.01 ether, "Require 0.01 ether to mint");
+
+        uint8[] memory ids = new uint8[](_amount);
 
         for (uint8 i = 0; i < _amount; i++) {
             uint8 id = _counter++;
 
             _mint(msg.sender, id);
+            ids[i] = id;
         }
+
+        return ids;
     }
 
-    function tokenURI(uint8 tokenId) public view returns (string memory) {
-        return
-            string(abi.encodePacked(_baseURI(), tokenId.toString(), ".json"));
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override(ERC721)
+        returns (string memory)
+    {
+        require(ownerOf(tokenId) != address(0), "Token does not exist");
+
+        return string(abi.encodePacked(_baseURI(), tokenId.toString()));
+    }
+
+    function withdraw() external onlyOwner {
+        (bool success, ) = owner.call{value: _balance}("");
+        require(success, "withdrawal failed");
     }
 }

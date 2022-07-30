@@ -17,7 +17,16 @@ contract Collectible is ERC721, Owned {
     uint256 private constant MINT_PRICE = 0.01 ether;
 
     uint8 private _counter;
-    uint256 private _balance;
+
+    modifier notMaxSupply() {
+        require(_counter < _maxSupply, "No more tokens to mint");
+        _;
+    }
+
+    modifier correctFee(uint256 quantity) {
+        require(quantity * MINT_PRICE == msg.value, "Fee is incorrect");
+        _;
+    }
 
     constructor(address _owner) ERC721("Marvels", "MARV") Owned(_owner) {}
 
@@ -30,28 +39,29 @@ contract Collectible is ERC721, Owned {
         return _counter;
     }
 
-    // function mint() external payable returns (uint8) {
-    //     require(_counter < _maxSupply, "No more tokens to mint");
-    //     require(msg.value != 0.01 ether, "Require 0.01 ether to mint");
-
-    //     uint8 id = _counter++;
-
-    //     _mint(msg.sender, id);
-    //     return id;
-    // }
+    function mint()
+        external
+        payable
+        notMaxSupply
+        correctFee(1)
+        returns (uint8)
+    {
+        uint8 id = _counter++;
+        _mint(msg.sender, id);
+        return id;
+    }
 
     function mint(uint256 _quantity)
         external
         payable
+        notMaxSupply
+        correctFee(_quantity)
         returns (uint256[] memory)
     {
-        require(_counter < _maxSupply, "No more tokens to mint");
-        require(msg.value != 0.01 ether, "Require 0.01 ether to mint");
-
         uint256[] memory ids = new uint256[](_quantity);
 
         for (uint256 i = 0; i < _quantity; i++) {
-            uint8 id = _counter++;
+            uint256 id = _counter++;
 
             _mint(msg.sender, id);
             ids[i] = id;
@@ -72,7 +82,7 @@ contract Collectible is ERC721, Owned {
     }
 
     function withdraw() external onlyOwner {
-        (bool success, ) = owner.call{value: _balance}("");
+        (bool success, ) = owner.call{value: address(this).balance}("");
         require(success, "withdrawal failed");
     }
 }

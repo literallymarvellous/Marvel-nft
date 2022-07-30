@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { Contract } from "ethers";
+import { Contract, BigNumber } from "ethers";
 
 describe("NFT", function () {
   let collectible: Contract;
@@ -28,26 +28,61 @@ describe("NFT", function () {
     });
 
     describe("mint", function () {
-      // it("should mint a single nft", async () => {
-      //   const [owner] = await ethers.getSigners();
-
-      //   const tx = await collectible.mint();
-
-      //   const receipt = await tx.wait();
-      //   expect(receipt.status).to.equal(1);
-
-      //   expect(await collectible.balanceOf(owner.address)).to.equal(1);
-      // });
-
-      it("should mint a specified number of nft", async () => {
+      it("should mint a single nft", async () => {
         const [owner] = await ethers.getSigners();
 
-        const tx = await collectible.mint(4);
+        const tx = await collectible["mint()"]({
+          value: ethers.utils.parseEther("0.01"),
+        });
 
         const receipt = await tx.wait();
         expect(receipt.status).to.equal(1);
 
-        expect(await collectible.balanceOf(owner.address)).to.equal(4);
+        expect(await collectible.balanceOf(owner.address)).to.equal(1);
+      });
+
+      it("should mint a specified number of nft", async () => {
+        const [owner, addr1] = await ethers.getSigners();
+
+        const tx = await collectible.connect(addr1)["mint(uint256)"](4, {
+          value: ethers.utils.parseEther("0.04"),
+        });
+
+        const receipt = await tx.wait();
+        expect(receipt.status).to.equal(1);
+
+        expect(await collectible.balanceOf(addr1.address)).to.equal(4);
+      });
+    });
+
+    describe("tokenURI", function () {
+      it("Should return the correct tokenURI", async function () {
+        const token = await collectible.tokenURI(1);
+        expect(token).to.equal(
+          "https://bafybeibhqislilo36kh2bhepzilr44hgfzpkngnf2x3tbuhopg4qb3fuha.ipfs.dweb.link/metadata/1"
+        );
+      });
+    });
+
+    describe("withdraw", function () {
+      it("it should send funds to the owner", async () => {
+        const provider = ethers.provider;
+        const [owner] = await ethers.getSigners();
+
+        const ownerBalanceBefore = await owner.getBalance();
+
+        const withdrawTx = await collectible.withdraw();
+        const receipt = await withdrawTx.wait();
+        expect(receipt.status).to.equal(1);
+
+        const contractBalance = await provider.getBalance(collectible.address);
+
+        const ownerBalanceAfter = await owner.getBalance();
+
+        expect(contractBalance).to.equal(0);
+        expect(ownerBalanceAfter.sub(ownerBalanceBefore)).to.equal(
+          ethers.utils.parseEther("0.049950769487962719")
+        );
       });
     });
   });

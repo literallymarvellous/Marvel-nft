@@ -18,16 +18,6 @@ contract Collectible is ERC721, Owned {
 
     uint8 private _counter;
 
-    modifier notMaxSupply() {
-        require(_counter < _maxSupply, "No more tokens to mint");
-        _;
-    }
-
-    modifier correctFee(uint256 quantity) {
-        require(quantity * MINT_PRICE == msg.value, "Fee is incorrect");
-        _;
-    }
-
     constructor(address _owner) ERC721("Marvels", "MARV") Owned(_owner) {}
 
     function _baseURI() internal pure returns (string memory) {
@@ -39,16 +29,8 @@ contract Collectible is ERC721, Owned {
         return _counter;
     }
 
-    function mint()
-        external
-        payable
-        notMaxSupply
-        correctFee(1)
-        returns (uint8)
-    {
-        uint8 id = _counter++;
-        _mint(msg.sender, id);
-        return id;
+    function mint() external payable returns (uint8) {
+        mint(1);
     }
 
     function mint(uint256 _quantity)
@@ -58,6 +40,9 @@ contract Collectible is ERC721, Owned {
         correctFee(_quantity)
         returns (uint256[] memory)
     {
+        require(_counter < _maxSupply, "No more tokens to mint");
+        require(quantity * MINT_PRICE == msg.value, "Fee is incorrect");
+        require(_quantity <= 5, "Can't mint more than 5");
         uint256[] memory ids = new uint256[](_quantity);
 
         for (uint256 i = 0; i < _quantity; i++) {
@@ -82,7 +67,9 @@ contract Collectible is ERC721, Owned {
     }
 
     function withdraw() external onlyOwner {
-        (bool success, ) = owner.call{value: address(this).balance}("");
+        uint256 balance = address(this).balance;
+        require(balance != 0, "No balance to withdraw");
+        (bool success, ) = owner.call{value: balance}("");
         require(success, "withdrawal failed");
     }
 }

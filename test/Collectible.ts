@@ -29,16 +29,16 @@ describe("NFT", function () {
 
     describe("mint", function () {
       it("should mint a single nft", async () => {
-        const [owner] = await ethers.getSigners();
+        const [owner, addr1] = await ethers.getSigners();
 
-        const tx = await collectible["mint()"]({
+        const tx = await collectible.connect(addr1)["mint()"]({
           value: ethers.utils.parseEther("0.01"),
         });
 
         const receipt = await tx.wait();
         expect(receipt.status).to.equal(1);
 
-        expect(await collectible.balanceOf(owner.address)).to.equal(1);
+        expect(await collectible.balanceOf(addr1.address)).to.equal(1);
       });
 
       it("should mint a specified number of nft", async () => {
@@ -51,7 +51,7 @@ describe("NFT", function () {
         const receipt = await tx.wait();
         expect(receipt.status).to.equal(1);
 
-        expect(await collectible.balanceOf(addr1.address)).to.equal(4);
+        expect(await collectible.balanceOf(addr1.address)).to.equal(5);
       });
     });
 
@@ -70,19 +70,23 @@ describe("NFT", function () {
         const [owner] = await ethers.getSigners();
 
         const ownerBalanceBefore = await owner.getBalance();
+        const contractBalanceBefore = await provider.getBalance(
+          collectible.address
+        );
 
+        const totalSupply = await collectible.totalSupply();
         const withdrawTx = await collectible.withdraw();
         const receipt = await withdrawTx.wait();
         expect(receipt.status).to.equal(1);
 
-        const contractBalance = await provider.getBalance(collectible.address);
+        const contractBalanceAfter = await provider.getBalance(
+          collectible.address
+        );
 
         const ownerBalanceAfter = await owner.getBalance();
 
-        expect(contractBalance).to.equal(0);
-        expect(ownerBalanceAfter.sub(ownerBalanceBefore)).to.equal(
-          ethers.utils.parseEther("0.049950769487962719")
-        );
+        expect(contractBalanceAfter).to.equal(0);
+        expect(ownerBalanceAfter).to.greaterThan(ownerBalanceBefore);
       });
     });
   });
